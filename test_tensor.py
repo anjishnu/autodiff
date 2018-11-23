@@ -18,7 +18,7 @@ def test_simple_sum():
 def test_simple_add():
     t1 = Tensor([1, 2, 3])
     t2 = Tensor([3, 4, 5])
-    t3 = t1.add(t2)
+    t3 = t1 + t2
     t3.backward([-1, -2, -3])
     print('t1.grad.data', t1.grad.data)
     print('t2.grad.data', t2.grad.data)
@@ -29,7 +29,7 @@ def test_simple_add():
 def test_simple_sub():
     t1 = Tensor([1, 2, 3])
     t2 = Tensor([4, 5, 6])
-    t3 = t1.sub(t2)
+    t3 = t1 - t2
     t3.backward([-1, -2, -3])
     print('t1.grad.data', t1.grad.data)
     print('t2.grad.data', t2.grad.data)
@@ -41,7 +41,7 @@ def test_simple_sub():
 def test_simple_mul():
     t1 = Tensor([1, 2, 3])
     t2 = Tensor([4, 5, 6])
-    t3 = t1.mult(t2)
+    t3 = t1 * t2
     t3.backward([-1., -2., -3.])
     print('t1.grad.data', t1.grad.data)
     print('t2.grad.data', t2.grad.data)
@@ -54,15 +54,15 @@ def minimize_a_function():
     # we want to minimize the sum of squares
 
     for i in range(100):
-        sum_of_squares = x.mult(x).sum() # 0-Tensor
+        sum_of_squares = (x*x).sum() # 0-Tensor
         sum_of_squares.backward()
-        delta_x = x.data * 0.1 
+        delta_x = x.grad.data * 0.1 
         x = Tensor(x.data - delta_x)
-        sum_of_squares = x.mult(x).sum() # 0-Tensor    
         if i%20 == 0:
             print('iteration', i, 'sum_of_squares.data', sum_of_squares.data)
 
-    assert sum_of_squares.data < 1e-4
+    assert sum_of_squares.data < 1e-12
+
 
 for name, test in test_registry.items():
     print('Running test', name)

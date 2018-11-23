@@ -43,7 +43,6 @@ class Tensor(object):
     def zero_grad(self) -> None:
         self.grad = Tensor(np.zeros_like(self.data), requires_grad=False)
 
-
     def backward(self, grad: 'Tensor' = None) -> 'Tensor':
 
         if grad is None:
@@ -60,25 +59,62 @@ class Tensor(object):
             backward_grad = dependency.gradient_function(grad)
             dependency.tensor.backward(backward_grad)
             
-
     def sum(self):
-        return Sum()(self)
-
+        return Sum().execute(self)
 
     def add(self, b):
-        return Add()(self, b)
-
+        return Add().execute(self, ensure_tensor(b))
 
     def mult(self, b):
-        return Multiply()(self, b)
-
+        return Multiply().execute(self, ensure_tensor(b))
 
     def neg(self):
-        return Neg()(self)
-
+        return Neg().execute(self)
 
     def sub(self, b):
-        return Add()(self, b.neg())
+        return Add().execute(self, ensure_tensor(b).neg())
+    
+    def __repr__(self) -> str:
+        return "Tensor with data={}".format(str(self.data))
+    
+    def __add__(self, other):
+        return self.add(ensure_tensor(other))
+
+    def __iadd__(self, other):
+        """ in place add like n += 1 """
+        self.data += ensure_tensor(other).data
+        self.grad = None
+        return self
+
+    def __isub__(self, other):
+        """ in place add like n += 1 """
+        self.data -= ensure_tensor(other).data
+        self.grad = None
+        return self
+
+    def __imul__(self, other):
+        """ in place add like n += 1 """
+        self.data *= ensure_tensor(other).data
+        self.grad = None
+        return self
+
+    def __radd(self, other):
+        return self.__add__(other)
+
+    def __mul__(self, other):
+        return self.mult(ensure_tensor(other))
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __neg__(self):
+        return self.neg()
+
+    def __sub__(self, other):
+        return self.sub(other)
+
+    def __rsub__(self, other):
+        return Add().execute(ensure_tensor(other), -self)
 
 
 class Operator(object):
@@ -96,7 +132,6 @@ class Operator(object):
 
     def __call__(self, *args, **kwargs):
         return self.execute(*args, **kwargs)
-
 
     def execute(self, tensor: Tensor):
         raise NotImplementedError
@@ -158,7 +193,7 @@ class Neg(UnaryOperator):
 
 
 class Add(BinaryOperator):
-    
+
     def _operate(self, t1: Tensor, t2: Tensor):
         assert(t1.data.shape == t2.data.shape)
         data = t1.data + t2.data
