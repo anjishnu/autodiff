@@ -22,11 +22,7 @@ def ensure_tensor(data):
 class Tensor(object):
     # To avoid circular imports
     
-    def __init__(self, 
-                 data : np.ndarray,
-                 requires_grad : bool = True,
-                 depends_on = []):
-
+    def __init__(self, data : np.ndarray, requires_grad : bool = True, depends_on = []):
         self.data = ensure_array(data)
         self.requires_grad: boolean = requires_grad
         self.depends_on = depends_on
@@ -137,6 +133,13 @@ class UnaryOperator(Operator):
 
 class BinaryOperator(Operator):    
 
+    def _compress_grad(self, grad, other_tensor): # Compress grad w.r.t a tensor
+        ndims_added = grad.data.ndim - other_tensor.data.ndim
+        for _ in range(ndims_added): grad.data = grad.data.sum(axis=0)         
+        for i, dim in enumerate(other_tensor.data.shape):
+            if dim == 1: grad.data = grad.data.sum(axis=i, keepdims=True) 
+        return grad
+
     def _get_grad_fn_1(self, *args, **kwargs):
         return self._get_grad_fn(*args, **kwargs)
 
@@ -181,16 +184,7 @@ class Add(BinaryOperator):
         return self._get_grad_fn(t2, t1)
 
     def _get_grad_fn(self, t1 : Tensor, t2 : Tensor):
-
-        def grad_fn(grad : np.ndarray) -> np.ndarray:
-            ndims_added = grad.data.ndim - t1.data.ndim
-            for _ in range(ndims_added): 
-                grad.data = grad.data.sum(axis=0)         
-            for i, dim in enumerate(t1.data.shape):
-                if dim == 1: grad.data = grad.data.sum(axis=i, keepdims=True)       
-            return grad
-
-        return grad_fn
+        return lambda grad : self._compress_grad(grad, t1)
 
 
 class Multiply(BinaryOperator):
@@ -203,15 +197,7 @@ class Multiply(BinaryOperator):
 
 
     def _get_grad_fn(self, t1 : Tensor, t2 : Tensor):
-
-        def grad_fn(grad : np.ndarray) -> np.ndarray:
-            ndims_added = grad.data.ndim - t1.data.ndim
-            for _ in range(ndims_added): grad.data = grad.data.sum(axis=0)                
-            for i, dim in enumerate(t1.data.shape): 
-                if dim == 1: grad.data = grad.data.sum(axis=i, keepdims=True)
-            return grad.data * t2.data
-
-        return grad_fn
+        return lambda grad : self._compress_grad(grad, t1).data * t2.data
     
 
 class MatrixMultiply(BinaryOperator):
