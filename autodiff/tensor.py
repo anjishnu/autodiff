@@ -9,8 +9,7 @@ class Dependency(NamedTuple):
 
 
 def ensure_array(arrayable_data):
-    if type(arrayable_data) != np.ndarray:
-        arrayable_data = np.array(arrayable_data, dtype=np.float64)
+    if type(arrayable_data) != np.ndarray: arrayable_data = np.array(arrayable_data, dtype=np.float64)
     return arrayable_data
 
 
@@ -39,11 +38,9 @@ class Tensor(object):
     def shape(self): return self.data.shape
 
     def zero_grad(self) -> None:
-        self.grad = Tensor(np.zeros_like(self.data, dtype=np.float64), 
-                           requires_grad=False)
+        self.grad = Tensor(np.zeros_like(self.data, dtype=np.float64), requires_grad=False)
 
     def backward(self, grad: 'Tensor' = None) -> 'Tensor':
-
         if grad is None:
             if self.shape == (): 
                 grad = Tensor(1, requires_grad=False)
@@ -80,18 +77,15 @@ class Tensor(object):
     
     def __add__(self, other): return self.add(ensure_tensor(other))
 
-    def __iadd__(self, other):
-        """ in place add like n += 1 """
+    def __iadd__(self, other): # x += 2
         self.data += ensure_tensor(other).data
         return self
 
-    def __isub__(self, other):
-        """ in place add like n += 1 """
+    def __isub__(self, other): # x-= 2
         self.data -= ensure_tensor(other).data
         return self
 
-    def __imul__(self, other):
-        """ in place add like n += 1 """
+    def __imul__(self, other): # x *= 2
         self.data *= ensure_tensor(other).data
         return self
 
@@ -185,7 +179,6 @@ class Add(BinaryOperator):
 
     def _get_grad_fn_2(self, t1, t2):
         return self._get_grad_fn(t2, t1)
-
 
     def _get_grad_fn(self, t1 : Tensor, t2 : Tensor):
 
