@@ -2,21 +2,17 @@ import numpy as np
 from typing import List, NamedTuple, Callable
 import copy
 
-
 class Dependency(NamedTuple):
     tensor : 'Tensor'
     gradient_function : Callable[[np.ndarray], np.ndarray]
-
 
 def ensure_array(arrayable_data):
     if type(arrayable_data) != np.ndarray: arrayable_data = np.array(arrayable_data, dtype=np.float64)
     return arrayable_data
 
-
 def ensure_tensor(data):
     if isinstance(data, Tensor): return data
     return Tensor(ensure_array(data))
-
 
 class Tensor(object):
 
@@ -41,9 +37,8 @@ class Tensor(object):
         else: grad = ensure_tensor(grad)
         assert self.requires_grad 
         self.grad.data += grad.data
-        for dependency in self.depends_on:
-            backward_grad = dependency.gradient_function(copy.deepcopy(grad))
-            dependency.tensor.backward(backward_grad)
+        for dependency in self.depends_on: 
+            dependency.tensor.backward(dependency.gradient_function(copy.deepcopy(grad))) 
             
     def sum(self): return Sum().execute(self)
     
@@ -52,8 +47,7 @@ class Tensor(object):
 
     @data.setter
     def data(self, value: np.ndarray) -> None:
-        self._data = value
-        # Setting the data manually means the gradients are invalidated
+        self._data = value # Setting the data manually means the gradients are invalidated
         self.grad = None
 
     def add(self, b): return Add().execute(self, ensure_tensor(b))
@@ -153,40 +147,53 @@ class BinaryOperator(Operator):
 
 class Sum(UnaryOperator):
 
-    def _operate(self, tensor : Tensor): return tensor.data.sum()
+    def _operate(self, tensor : Tensor): 
+        return tensor.data.sum()
 
-    def _get_grad_fn(self, tensor: Tensor): return lambda grad : grad.data * np.ones_like(tensor.data)
+    def _get_grad_fn(self, tensor: Tensor): 
+        return lambda grad : grad.data * np.ones_like(tensor.data)
 
 
 class Neg(UnaryOperator):
 
-    def _operate(self, tensor): return -tensor.data
+    def _operate(self, tensor): 
+        return -tensor.data
 
-    def _get_grad_fn(self, tensor): return lambda t : -t.data
+    def _get_grad_fn(self, tensor): 
+        return lambda t : -t.data
 
 
 class Add(BinaryOperator):
 
-    def _operate(self, t1: Tensor, t2: Tensor): return t1.data + t2.data
+    def _operate(self, t1: Tensor, t2: Tensor): 
+        return t1.data + t2.data
 
-    def _get_grad_fn_2(self, t1, t2): return self._get_grad_fn(t2, t1)
+    def _get_grad_fn_2(self, t1, t2): 
+        return self._get_grad_fn(t2, t1)
 
-    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): return lambda grad : self._compress_grad(grad, t1)
+    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): 
+        return lambda grad : self._compress_grad(grad, t1)
 
 
 class Multiply(BinaryOperator):
     
-    def _operate(self, t1: Tensor, t2: Tensor): return t1.data * t2.data
+    def _operate(self, t1: Tensor, t2: Tensor): 
+        return t1.data * t2.data
 
-    def _get_grad_fn_2(self, t1, t2): return self._get_grad_fn(t2, t1)
+    def _get_grad_fn_2(self, t1, t2): 
+        return self._get_grad_fn(t2, t1)
 
-    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): return lambda grad : self._compress_grad(grad, t1).data * t2.data
+    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): 
+        return lambda grad : self._compress_grad(grad, t1).data * t2.data
     
 
 class MatrixMultiply(BinaryOperator):
 
-    def _operate(self, t1: Tensor, t2:Tensor): return t1.data @ t2.data
+    def _operate(self, t1: Tensor, t2:Tensor): 
+        return t1.data @ t2.data
 
-    def _get_grad_fn_1(self, t1, t2): return lambda grad : grad.data @ t2.data.T
+    def _get_grad_fn_1(self, t1, t2): 
+        return lambda grad : grad.data @ t2.data.T
  
-    def _get_grad_fn_2(self, t1, t2): return lambda grad : t1.data.T @ grad.data
+    def _get_grad_fn_2(self, t1, t2): 
+        return lambda grad : t1.data.T @ grad.data
