@@ -96,6 +96,9 @@ def test_matmul():
         
 @register_test
 def test_learned_function():
+    ''' learned function - linear regression with 
+    automatic differentiation '''
+
     x_raw = np.random.randn(100, 3)
     coef = np.array([-1, + 3, -2], dtype=np.float64)
     y_raw = x_raw @ coef + 5 + np.random.randint(-2, 2, size=(100,))
@@ -104,24 +107,16 @@ def test_learned_function():
     w = Tensor(np.random.randn(3))
     b = Tensor(np.random.randn())
 
-
-    print ('x_raw', x_raw)
-    print ('y_raw', y_raw)
-
     for epoch in range(100):
 
         w.zero_grad()
         b.zero_grad()
-
-        predicted = (x_data @ w) + b
+        predicted = (x_data @ w) + b # Linear function - matrix multiple
         errors = predicted - y_data
-
-        loss = (errors * errors).sum()
+        loss = (errors * errors).sum() # Squared error loss
         loss.backward()
-
         w -= w.grad * 0.001
         b -= b.grad * 0.001
-
         if not epoch % 20:
             print(epoch, 'loss', loss.data)
 
