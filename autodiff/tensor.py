@@ -15,8 +15,7 @@ def ensure_array(arrayable_data):
 
 def ensure_tensor(data):
     if isinstance(data, Tensor): return data
-    array = ensure_array(data)
-    return Tensor(array)
+    return Tensor(ensure_array(data))
 
 
 class Tensor(object):
@@ -110,8 +109,7 @@ class Operator(object):
     def _operate(self, data : np.ndarray):
         raise NotImplementedError('Implement operate function!')
     
-    def __call__(self, *args, **kwargs):
-        return self.execute(*args, **kwargs)
+    def __call__(self, *args, **kwargs): return self.execute(*args, **kwargs)
 
     def execute(self, tensor: Tensor):
         raise NotImplementedError
@@ -138,11 +136,9 @@ class BinaryOperator(Operator):
             if dim == 1: grad.data = grad.data.sum(axis=i, keepdims=True) 
         return grad
 
-    def _get_grad_fn_1(self, *args, **kwargs):
-        return self._get_grad_fn(*args, **kwargs)
+    def _get_grad_fn_1(self, *args, **kwargs): return self._get_grad_fn(*args, **kwargs)
 
-    def _get_grad_fn_2(self, *args, **kwargs):
-        return self._get_grad_fn(*args, **kwargs)
+    def _get_grad_fn_2(self, *args, **kwargs): return self._get_grad_fn(*args, **kwargs)
     
     def execute(self, t1: Tensor, t2: Tensor) -> Tensor:
         requires_grad = t1.requires_grad or t2.requires_grad
@@ -157,54 +153,40 @@ class BinaryOperator(Operator):
 
 class Sum(UnaryOperator):
 
-    def _operate(self, tensor : Tensor):
-        return tensor.data.sum()
+    def _operate(self, tensor : Tensor): return tensor.data.sum()
 
-    def _get_grad_fn(self, tensor: Tensor):
-        return lambda grad : grad.data * np.ones_like(tensor.data)
+    def _get_grad_fn(self, tensor: Tensor): return lambda grad : grad.data * np.ones_like(tensor.data)
 
 
 class Neg(UnaryOperator):
 
-    def _operate(self, tensor):
-        return -tensor.data
+    def _operate(self, tensor): return -tensor.data
 
-    def _get_grad_fn(self, tensor):
-        return lambda t : -t.data
+    def _get_grad_fn(self, tensor): return lambda t : -t.data
 
 
 class Add(BinaryOperator):
 
-    def _operate(self, t1: Tensor, t2: Tensor):
-        return t1.data + t2.data
+    def _operate(self, t1: Tensor, t2: Tensor): return t1.data + t2.data
 
-    def _get_grad_fn_2(self, t1, t2):
-        return self._get_grad_fn(t2, t1)
+    def _get_grad_fn_2(self, t1, t2): return self._get_grad_fn(t2, t1)
 
-    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor):
-        return lambda grad : self._compress_grad(grad, t1)
+    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): return lambda grad : self._compress_grad(grad, t1)
 
 
 class Multiply(BinaryOperator):
     
-    def _operate(self, t1: Tensor, t2: Tensor):
-        return t1.data * t2.data
+    def _operate(self, t1: Tensor, t2: Tensor): return t1.data * t2.data
 
-    def _get_grad_fn_2(self, t1, t2):
-        return self._get_grad_fn(t2, t1)
+    def _get_grad_fn_2(self, t1, t2): return self._get_grad_fn(t2, t1)
 
-
-    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor):
-        return lambda grad : self._compress_grad(grad, t1).data * t2.data
+    def _get_grad_fn(self, t1 : Tensor, t2 : Tensor): return lambda grad : self._compress_grad(grad, t1).data * t2.data
     
 
 class MatrixMultiply(BinaryOperator):
 
-    def _operate(self, t1: Tensor, t2:Tensor):
-        return t1.data @ t2.data
+    def _operate(self, t1: Tensor, t2:Tensor): return t1.data @ t2.data
 
-    def _get_grad_fn_1(self, t1, t2):
-        return lambda grad : grad.data @ t2.data.T
+    def _get_grad_fn_1(self, t1, t2): return lambda grad : grad.data @ t2.data.T
  
-    def _get_grad_fn_2(self, t1, t2):
-        return lambda grad : t1.data.T @ grad.data
+    def _get_grad_fn_2(self, t1, t2): return lambda grad : t1.data.T @ grad.data
