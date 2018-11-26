@@ -21,13 +21,20 @@ class Tensor(object):
         self.requires_grad: boolean = requires_grad
         self.depends_on = depends_on
         self.grad : Tensor = None
-        if self.requires_grad:
-            self.zero_grad()
+        if self.requires_grad: self.zero_grad()
 
     @property
     def shape(self): return self.data.shape
 
-    def zero_grad(self) -> None:
+    @property
+    def data(self) -> np.ndarray: return self._data
+
+    @data.setter
+    def data(self, value: np.ndarray) -> None:
+        self._data = value # Setting the data manually means the gradients are invalidated
+        self.grad = None
+
+    def zero_grad(self) -> None: # Zero out gradients
         self.grad = Tensor(np.zeros_like(self.data, dtype=np.float64), requires_grad=False)
 
     def backward(self, grad: 'Tensor' = None) -> 'Tensor':
@@ -37,18 +44,10 @@ class Tensor(object):
         else: grad = ensure_tensor(grad)
         assert self.requires_grad 
         self.grad.data += grad.data
-        for dependency in self.depends_on: 
+        for dependency in self.depends_on: # Backprop through dependencies
             dependency.tensor.backward(dependency.gradient_function(copy.deepcopy(grad))) 
-            
-    def sum(self): return Sum().execute(self)
-    
-    @property
-    def data(self) -> np.ndarray: return self._data
 
-    @data.setter
-    def data(self, value: np.ndarray) -> None:
-        self._data = value # Setting the data manually means the gradients are invalidated
-        self.grad = None
+    def sum(self): return Sum().execute(self)    
 
     def add(self, b): return Add().execute(self, ensure_tensor(b))
 
