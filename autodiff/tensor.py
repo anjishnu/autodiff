@@ -20,8 +20,7 @@ def ensure_tensor(data):
 
 
 class Tensor(object):
-    # To avoid circular imports
-    
+
     def __init__(self, data : np.ndarray, requires_grad : bool = True, depends_on = []):
         self.data = ensure_array(data)
         self.requires_grad: boolean = requires_grad
@@ -38,8 +37,7 @@ class Tensor(object):
 
     def backward(self, grad: 'Tensor' = None) -> 'Tensor':
         if grad is None:
-            if self.shape == (): 
-                grad = Tensor(1, requires_grad=False)
+            if self.shape == (): grad = Tensor(1, requires_grad=False)
             else: raise RuntimeError('grad must be specified for non-0 tensor')
         else: grad = ensure_tensor(grad)
         assert self.requires_grad 
